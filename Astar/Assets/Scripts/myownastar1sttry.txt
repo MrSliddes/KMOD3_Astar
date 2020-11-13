@@ -1,0 +1,117 @@
+// Maintain 2 lists
+
+        // Consists of nodes that have been visited but not expanded (meaning sucessors have not been explored yet). This is the list of pending tasks.
+        List<Node> nodesOpen = new List<Node>();
+        // Consists of nodes that have been visited and expanded (succesors have been explored already and included in the open lists, if this was the case).
+        List<Node> nodesClosed = new List<Node>();
+
+        // Add start node (start pos) in open list, f = h (initialaziation)
+        nodesOpen.Add(new Node(startPos, null, 0, (int)Vector2.Distance(startPos, endPos)));
+
+        // Loop through nodes open until it is empty
+        int nodeCurrentIndex = 0;
+        Node nodeCurrent = null; // The current node
+        int noInfiniteWhileLoop = 9999;
+        while(nodesOpen.Count > 0)
+        {
+            // Take the node with the lowest f cost <<< LOWEST
+            float lowestFCost = nodesOpen[0].FScore;
+            for(int i = 0; i < nodesOpen.Count; i++)
+            {
+                if(nodesOpen[i].FScore < lowestFCost)
+                {
+                    lowestFCost = nodesOpen[i].FScore;
+                    nodeCurrentIndex = i;
+                }
+            }
+            nodeCurrent = nodesOpen[nodeCurrentIndex];
+            // We now have the node with the lowest f cost
+
+            // Check if the node if the endPos
+            if(nodesOpen[nodeCurrentIndex].position == endPos)
+            {
+                // We have found the solution;
+                Debug.Log("Found endPos");
+                break;
+            }
+
+            // Generate each state nodeSuccessor that comes after nodeCurrent
+            List<Node> nodeSuccesors = new List<Node>(); // * successors, wrote it wrong
+            nodeSuccesors.Clear();
+            // Check up, right, down, left position of nodeCurrent, no diagonal!
+            // And check if the node exists on the grid
+            if(nodeCurrent.position.x >= 0 && nodeCurrent.position.x < grid.Length && nodeCurrent.position.y + 1 >= 0 && nodeCurrent.position.y < grid.Length)
+                nodeSuccesors.Add(new Node(new Vector2Int(nodeCurrent.position.x, nodeCurrent.position.y + 1), new Node(nodeCurrent), (int)Vector2.Distance(nodeCurrent.position, startPos), (int)Vector2.Distance(nodeCurrent.position, endPos))); // This stuff should be added to nodesOpen
+            if(nodeCurrent.position.x + 1 >= 0 && nodeCurrent.position.x < grid.Length && nodeCurrent.position.y >= 0 && nodeCurrent.position.y < grid.Length)
+                nodeSuccesors.Add(new Node(new Vector2Int(nodeCurrent.position.x + 1, nodeCurrent.position.y), new Node(nodeCurrent), (int)Vector2.Distance(nodeCurrent.position, startPos), (int)Vector2.Distance(nodeCurrent.position, endPos)));
+            if(nodeCurrent.position.x >= 0 && nodeCurrent.position.x < grid.Length && nodeCurrent.position.y - 1 >= 0 && nodeCurrent.position.y < grid.Length)
+                nodeSuccesors.Add(new Node(new Vector2Int(nodeCurrent.position.x, nodeCurrent.position.y - 1), new Node(nodeCurrent), (int)Vector2.Distance(nodeCurrent.position, startPos), (int)Vector2.Distance(nodeCurrent.position, endPos)));
+            if(nodeCurrent.position.x - 1 >= 0 && nodeCurrent.position.x < grid.Length && nodeCurrent.position.y >= 0 && nodeCurrent.position.y < grid.Length)
+                nodeSuccesors.Add(new Node(new Vector2Int(nodeCurrent.position.x - 1, nodeCurrent.position.y), new Node(nodeCurrent), (int)Vector2.Distance(nodeCurrent.position, startPos), (int)Vector2.Distance(nodeCurrent.position, endPos)));
+
+            for(int i = 0; i < nodeSuccesors.Count; i++)
+            {
+                Debug.Log("Pos:" + nodeSuccesors[i].position);
+            }
+
+            // Loop trough nodeSuccessors
+            for(int i = 0; i < nodeSuccesors.Count; i++)
+            {
+                // Set successor cost
+                int succesorCurrentCost = (int)nodeSuccesors[i].GScore;
+
+                // Check if node is in open list
+                if(IsNodeInList(nodeSuccesors[i], nodesOpen))
+                {
+                    // Check if new f cost is lower
+                    if(nodeSuccesors[i].FScore <= succesorCurrentCost) continue;
+                }
+                else if(IsNodeInList(nodeSuccesors[i], nodesClosed)) // Check in closed list
+                {
+                    if(nodeSuccesors[i].FScore <= succesorCurrentCost) continue;
+                    // Move node from closed to open
+                    int j = GetNodeIndexFromList(nodeSuccesors[i], nodesClosed);
+                    Node n = nodesClosed[j];
+                    nodesClosed.RemoveAt(j);                    
+                    nodesOpen.Add(n);
+                }
+                else
+                {
+                    // Add successor node to open list
+                    nodesOpen.Add(nodeSuccesors[i]);
+                }
+                // Parent already set
+            }
+
+            // Add node current to closed list
+            int jj = GetNodeIndexFromList(nodeCurrent, nodesOpen);
+            Node nn = nodesOpen[jj];
+            nodesOpen.RemoveAt(jj);
+            nodesClosed.Add(nn);
+
+            // No infinite while loop if error
+            noInfiniteWhileLoop--;
+            if(noInfiniteWhileLoop <= 0)
+            {
+                Debug.LogError("While loop error");
+                return null;
+            }
+        }
+
+        if(nodeCurrent.position != endPos)
+        {
+            Debug.LogError("Open list is empty");
+        }
+
+        // Search for the path
+        Node s = nodeCurrent;
+        List<Vector2Int> wayBack = new List<Vector2Int>();
+        while(s.parent != null)
+        {
+            Debug.Log(s.position);
+            wayBack.Add(new Vector2Int(s.position.x, s.position.y));
+            s = s.parent;
+        }
+
+        Debug.Log("Success?");
+        return wayBack;
